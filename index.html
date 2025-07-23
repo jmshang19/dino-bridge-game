@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dino Bridge Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to bottom, #87ceeb, #ffffff);
+      text-align: center;
+      padding: 20px;
+    }
+    #game-container {
+      max-width: 800px;
+      margin: auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      position: relative;
+    }
+    #upload-section {
+      margin-bottom: 20px;
+    }
+    #bridge {
+      display: flex;
+      justify-content: flex-start;
+      min-height: 50px;
+      margin: 20px 0;
+      position: relative;
+    }
+    .bridge-piece {
+      background: #8b4513;
+      color: #fff;
+      padding: 10px;
+      margin-right: 5px;
+      border-radius: 5px;
+      min-width: 60px;
+    }
+    #options {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+    .option-btn {
+      padding: 10px 15px;
+      font-size: 16px;
+      background-color: #eee;
+      border: 1px solid #aaa;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .option-btn:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+    #dino {
+      position: absolute;
+      top: -80px;
+      left: 0;
+      font-size: 40px;
+      transition: left 0.5s ease;
+    }
+    .shake {
+      animation: shake 0.3s;
+    }
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      50% { transform: translateX(5px); }
+      75% { transform: translateX(-5px); }
+      100% { transform: translateX(0); }
+    }
+    .fall {
+      animation: fall 0.7s forwards;
+    }
+    @keyframes fall {
+      0% { top: -80px; }
+      100% { top: 300px; opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <h1>🦕 小恐龙过桥</h1>
+  <div id="game-container">
+    <div id="upload-section">
+      <textarea id="sentence-input" rows="4" cols="50" placeholder="请输入句子，每行一个"></textarea><br/>
+      <input type="file" id="fileInput" accept=".txt" />
+      <button onclick="handleFileUpload()">上传TXT</button>
+      <button onclick="loadSentences()">开始游戏</button>
+    </div>
+
+    <div id="dino">🦕</div>
+    <div id="bridge"></div>
+    <div id="options"></div>
+    <div id="message"></div>
+  </div>
+
+  <script>
+    let sentenceList = [];
+    let currentSentence = "";
+    let parts = [];
+    let currentIndex = 0;
+
+    function loadSentences() {
+      const input = document.getElementById('sentence-input').value.trim();
+      sentenceList = input.split('\n').filter(line => line.trim() !== "");
+      startNextSentence();
+    }
+
+    function handleFileUpload() {
+      const fileInput = document.getElementById('fileInput');
+      if (!fileInput.files.length) return;
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const content = event.target.result;
+        document.getElementById('sentence-input').value = content.trim();
+      };
+      reader.readAsText(file);
+    }
+
+    function splitSentence(sentence) {
+      const words = sentence.split(" ");
+      let chunks = [];
+      for (let i = 0; i < words.length; i += 2) {
+        chunks.push(words.slice(i, i + 2).join(" "));
+      }
+      return chunks;
+    }
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function startNextSentence() {
+      if (sentenceList.length === 0) return;
+      document.getElementById("bridge").innerHTML = "";
+      document.getElementById("options").innerHTML = "";
+      document.getElementById("message").innerText = "";
+      const dino = document.getElementById("dino");
+      dino.style.top = "-80px";
+      dino.style.opacity = 1;
+      dino.classList.remove("fall");
+      currentSentence = sentenceList.shift();
+      parts = splitSentence(currentSentence);
+      currentIndex = 0;
+      const options = shuffle([...parts]);
+      options.forEach(part => {
+        const btn = document.createElement("button");
+        btn.className = "option-btn";
+        btn.textContent = part;
+        btn.onclick = () => selectPart(btn, part);
+        document.getElementById("options").appendChild(btn);
+      });
+    }
+
+    function selectPart(button, part) {
+      const dino = document.getElementById("dino");
+      if (part === parts[currentIndex]) {
+        currentIndex++;
+        const piece = document.createElement("div");
+        piece.className = "bridge-piece";
+        piece.innerText = part;
+        document.getElementById("bridge").appendChild(piece);
+        button.disabled = true;
+        dino.style.left = (currentIndex * 70) + "px";
+        if (currentIndex === parts.length) {
+          document.getElementById("message").innerText = "🎉 小恐龙成功过桥！";
+          setTimeout(startNextSentence, 1500);
+        }
+      } else {
+        button.style.backgroundColor = "#f88";
+        button.classList.add("shake");
+        dino.classList.add("fall");
+        setTimeout(() => {
+          button.classList.remove("shake");
+          button.style.backgroundColor = "#eee";
+          dino.classList.remove("fall");
+          dino.style.top = "-80px";
+        }, 700);
+      }
+    }
+  </script>
+</body>
+</html>
